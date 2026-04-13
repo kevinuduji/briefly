@@ -1,0 +1,9 @@
+# Supabase CLI — https://supabase.com/docs/guides/cli/config
+
+project_id = "briefly"
+
+[api]
+enabled = true
+
+[functions]
+verify_jwt = true
