@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.briefly.refresh</string>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -22,6 +26,14 @@
 	<string>1</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Briefly records your daily business update so we can transcribe and structure it.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Briefly shows a live transcript while you speak so you can trust what was captured.</string>
+	<key>SUPABASE_ANON_KEY</key>
+	<string>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5YXhnZGF3b3djaWJvZXh5bmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMjE0NjksImV4cCI6MjA5MTY5NzQ2OX0.ZSlMM8zGsn-ZHmtoCrhqzNVJp8qB9tN4ScLQ8a6looA</string>
+	<key>SUPABASE_URL</key>
+	<string>https://gyaxgdawowciboexyngf.supabase.co</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -33,23 +45,11 @@
 		<string>processing</string>
 		<string>remote-notification</string>
 	</array>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.briefly.refresh</string>
-	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Briefly records your daily business update so we can transcribe and structure it.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Briefly shows a live transcript while you speak so you can trust what was captured.</string>
-	<key>SUPABASE_URL</key>
-	<string></string>
-	<key>SUPABASE_ANON_KEY</key>
-	<string></string>
 </dict>
 </plist>

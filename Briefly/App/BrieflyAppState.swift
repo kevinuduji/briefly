@@ -136,17 +136,39 @@ final class BrieflyAppState: ObservableObject {
 
     /// After local capture: create draft, upload audio, run Edge function, persist structured review payload.
     func processCapturedSession(engine: RambleCaptureEngine) async throws -> DailyLogRow {
-        guard let uid = userId else { throw BrieflyError.notSignedIn }
+        let uid: UUID
+        do {
+            uid = try await auth.activeUserId()
+        } catch {
+            throw BrieflyError.notSignedIn
+        }
         guard let audioURL = engine.outputFileURL else { throw BrieflyError.missingAudio }
+
+        // Force a fresh access token before any write. Prevents RLS failures caused
+        // by the SDK sending a stale JWT on the first post-launch request.
+        do {
+            try await client.auth.refreshSession()
+        } catch {
+            throw BrieflyError.notSignedIn
+        }
+
         let p = try await profileRepo.fetchProfile(userId: uid)
 
         let logDate = DateOnly.todayString()
-        var draft = try await dailyLogRepo.createDraft(
-            userId: uid,
-            logDate: logDate,
-            transcript: engine.liveTranscript,
-            audioPath: nil
-        )
+        var draft: DailyLogRow
+        do {
+            draft = try await dailyLogRepo.createDraft(
+                userId: uid,
+                logDate: logDate,
+                transcript: engine.liveTranscript,
+                audioPath: nil
+            )
+        } catch let pgError as PostgrestError {
+            if pgError.code == "42501" || pgError.message.lowercased().contains("row-level security") {
+                throw BrieflyError.sessionMismatch
+            }
+            throw pgError
+        }
 
         let path = try await storage.uploadAudio(userId: uid, logId: draft.id, localFileURL: audioURL)
         draft.audioStoragePath = path
@@ -171,7 +193,12 @@ final class BrieflyAppState: ObservableObject {
 
     /// User confirms structured review: regenerate metrics/actions with `structuredOverride`, then commit.
     func confirmLog(_ log: DailyLogRow, editedStructured: StructuredBusinessData, editedSummary: String, editedTranscript: String) async throws {
-        guard let uid = userId else { throw BrieflyError.notSignedIn }
+        let uid: UUID
+        do {
+            uid = try await auth.activeUserId()
+        } catch {
+            throw BrieflyError.notSignedIn
+        }
         let profile = try await profileRepo.fetchProfile(userId: uid)
         let response = try await edge.processDailyLog(
             transcript: editedTranscript,
@@ -270,5 +297,19 @@ final class BrieflyAppState: ObservableObject {
     enum BrieflyError: Error {
         case notSignedIn
         case missingAudio
+        case sessionMismatch
+    }
+}
+
+extension BrieflyAppState.BrieflyError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case .notSignedIn:
+            return "You are not signed in. Please sign in and try again."
+        case .missingAudio:
+            return "No captured audio was found. Please record again."
+        case .sessionMismatch:
+            return "Your session could not be verified for saving this check-in. Please sign out and sign back in."
+        }
     }
 }

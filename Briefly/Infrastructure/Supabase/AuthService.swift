@@ -36,6 +36,12 @@ final class AuthService: ObservableObject {
         }
     }
 
+    func activeUserId() async throws -> UUID {
+        let currentSession = try await client.auth.session
+        session = currentSession
+        return currentSession.user.id
+    }
+
     func prepareAppleSignInRequest(_ request: ASAuthorizationAppleIDRequest) {
         let nonce = randomNonceString()
         currentNonce = nonce

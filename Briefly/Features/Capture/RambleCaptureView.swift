@@ -76,6 +76,7 @@ struct RambleCaptureView: View {
         .navigationDestination(item: $navigateToReview) { log in
             ReviewConfirmView(log: log)
         }
+        .onAppear { state.errorMessage = nil }
     }
 
     private var hints: some View {

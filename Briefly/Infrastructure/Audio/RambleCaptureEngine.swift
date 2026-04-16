@@ -5,11 +5,12 @@ import SwiftUI
 
 /// Single `AVAudioEngine` session: live Apple Speech transcript + write captured audio to a file for Whisper/OpenAI upload.
 @MainActor
-final class RambleCaptureEngine: NSObject, ObservableObject {
+final class RambleCaptureEngine: NSObject, ObservableObject, SFSpeechRecognizerDelegate {
     @Published var isRecording = false
     @Published var liveTranscript = ""
     @Published var waveformLevel: CGFloat = 0
     @Published var errorMessage: String?
+    @Published private(set) var recognizerAvailable: Bool = false
 
     private let engine = AVAudioEngine()
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
@@ -20,6 +21,16 @@ final class RambleCaptureEngine: NSObject, ObservableObject {
 
     private(set) var outputFileURL: URL?
 
+    override init() {
+        super.init()
+        speechRecognizer?.delegate = self
+        recognizerAvailable = speechRecognizer?.isAvailable ?? false
+    }
+
+    nonisolated func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
+        Task { @MainActor in self.recognizerAvailable = available }
+    }
+
     func requestPermissions() async -> Bool {
         let speech = await withCheckedContinuation { (c: CheckedContinuation<Bool, Never>) in
             SFSpeechRecognizer.requestAuthorization { status in
@@ -28,8 +39,14 @@ final class RambleCaptureEngine: NSObject, ObservableObject {
         }
         guard speech else { return false }
         return await withCheckedContinuation { c in
-            AVAudioSession.sharedInstance().requestRecordPermission { granted in
-                c.resume(returning: granted)
+            if #available(iOS 17.0, *) {
+                AVAudioApplication.requestRecordPermission { granted in
+                    c.resume(returning: granted)
+                }
+            } else {
+                AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                    c.resume(returning: granted)
+                }
             }
         }
     }
@@ -37,6 +54,14 @@ final class RambleCaptureEngine: NSObject, ObservableObject {
     func startSession() throws {
         errorMessage = nil
         liveTranscript = ""
+        waveformLevel = 0
+
+        guard let speechRecognizer else {
+            throw RambleError.recognizerUnavailable
+        }
+        guard recognizerAvailable else {
+            throw RambleError.recognizerUnavailable
+        }
 
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.playAndRecord, mode: .spokenAudio, options: [.duckOthers, .defaultToSpeaker])
@@ -56,13 +81,21 @@ final class RambleCaptureEngine: NSObject, ObservableObject {
 
         guard let recognitionRequest else { throw RambleError.badState }
 
-        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { [weak self] result, error in
+        recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
             Task { @MainActor in
                 if let result {
                     self?.liveTranscript = result.bestTranscription.formattedString
                 }
                 if let error {
-                    self?.errorMessage = error.localizedDescription
+                    let nsError = error as NSError
+                    let description = error.localizedDescription.lowercased()
+                    let isExpectedCancellation =
+                        nsError.domain == "kAFAssistantErrorDomain" ||
+                        nsError.domain == "SFSpeechErrorDomain" ||
+                        description.contains("cancel")
+                    if !isExpectedCancellation {
+                        self?.errorMessage = error.localizedDescription
+                    }
                 }
             }
         }
@@ -87,7 +120,7 @@ final class RambleCaptureEngine: NSObject, ObservableObject {
     func stopSession() {
         engine.inputNode.removeTap(onBus: 0)
         recognitionRequest?.endAudio()
-        recognitionTask?.cancel()
+        recognitionTask?.finish()
         recognitionTask = nil
         recognitionRequest = nil
 
@@ -110,5 +143,17 @@ final class RambleCaptureEngine: NSObject, ObservableObject {
 
     enum RambleError: Error {
         case badState
+        case recognizerUnavailable
+    }
+}
+
+extension RambleCaptureEngine.RambleError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case .badState:
+            return "Could not start recording. Please try again."
+        case .recognizerUnavailable:
+            return "Failed to initialize recognizer. Check network and try again."
+        }
     }
 }
