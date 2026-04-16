@@ -31,7 +31,9 @@ xcuserdata/
 .build/
 .swiftpm/
 Packages/
-Package.resolved
+# Keep Briefly.xcodeproj/.../swiftpm/Package.resolved committed for Xcode Cloud / CI
+# (only ignore root-level Package.resolved from standalone Swift packages)
+/Package.resolved
 
 # CocoaPods
 Pods/
