@@ -106,6 +106,14 @@ final class BrieflyAppState: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
+            // Force a fresh access token before any write — same fix as processCapturedSession.
+            // On a physical device the SDK can send a stale JWT on the first request after sign-in.
+            do {
+                try await client.auth.refreshSession()
+            } catch {
+                errorMessage = "Session expired. Please sign in again."
+                return
+            }
             let row = UserProfileRow(
                 id: uid,
                 createdAt: nil,
@@ -225,7 +233,8 @@ final class BrieflyAppState: ObservableObject {
     }
 
     func markAction(_ action: ActionRecommendationRow, status: ActionStatus, feedback: String?) async {
-        guard let uid = userId else { return }
+        let uid: UUID
+        do { uid = try await auth.activeUserId() } catch { return }
         do {
             try await actionRepo.updateStatus(actionId: action.id, status: status)
             if status == .done || status == .skipped {
