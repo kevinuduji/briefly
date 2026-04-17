@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "NT01"
-               BuildableName = "Briefly.app"
+               BuildableName = "Briefly: Voice-First Business.app"
                BlueprintName = "Briefly"
                ReferencedContainer = "container:Briefly.xcodeproj">
             </BuildableReference>
@@ -48,7 +48,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "NT01"
-            BuildableName = "Briefly.app"
+            BuildableName = "Briefly: Voice-First Business.app"
             BlueprintName = "Briefly"
             ReferencedContainer = "container:Briefly.xcodeproj">
          </BuildableReference>
@@ -65,7 +65,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "NT01"
-            BuildableName = "Briefly.app"
+            BuildableName = "Briefly: Voice-First Business.app"
             BlueprintName = "Briefly"
             ReferencedContainer = "container:Briefly.xcodeproj">
          </BuildableReference>
