@@ -368,7 +368,7 @@ final class StorageService {
 
     func uploadAudio(userId: UUID, logId: UUID, localFileURL: URL) async throws -> String {
         let path = "\(userId.uuidString)/\(logId.uuidString).m4a"
-        let data = try Data(contentsOf: localFileURL)
+        let data = try await Task.detached(priority: .userInitiated) { try Data(contentsOf: localFileURL) }.value
         try await client.storage
             .from("briefly-audio")
             .upload(

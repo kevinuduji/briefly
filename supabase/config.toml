@@ -5,5 +5,8 @@ project_id = "briefly"
 [api]
 enabled = true
 
-[functions]
+[functions.process-daily-log]
+verify_jwt = true
+
+[functions.generate-audio-brief]
 verify_jwt = true
